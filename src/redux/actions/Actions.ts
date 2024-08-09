@@ -19,8 +19,6 @@ import { Dispatch } from "redux"; // Import Dispatch from redux
 
 import { LOCAL_STORAGE_SESSION } from "../../extrastorage/storage";
 import localStorageType from "../types/types";
-import { ThunkAction } from "redux-thunk";
-import { RootState } from "../store";
 
 export const ADD_TODO = "ADD_TODO";
 
@@ -28,9 +26,11 @@ export const addToLocalStorage =
   (todo: localStorageType) => async (dispatch: Dispatch) => {
     try {
       // Assuming you're using localStorage to save the todos
-      let todos = JSON.parse(localStorage.getItem("todos") || "[]");
+      let todos = JSON.parse(
+        localStorage.getItem(LOCAL_STORAGE_SESSION) || "[]"
+      );
       todos.push(todo);
-      localStorage.setItem("todos", JSON.stringify(todos));
+      localStorage.setItem(LOCAL_STORAGE_SESSION, JSON.stringify(todos));
 
       dispatch({
         type: ADD_TODO,
@@ -41,148 +41,100 @@ export const addToLocalStorage =
     }
   };
 
-export const removeFromLocalStorage =
-  (item: localStorageType) => async (dispatch: Dispatch) => {
+export const removeFromLocalStorage = (id: string) => {
+  return async (dispatch: Dispatch) => {
     try {
-      dispatch({
-        type: REMOVE_FROM_LOCALSTORAGE_REQUEST,
-      });
-
-      // get existing wishlist from local storage
-      const existingWishlist: localStorageType[] =
-        JSON.parse(localStorage.getItem(LOCAL_STORAGE_SESSION) as any) || [];
-
-      // Check if item already exists in wishlist
-      const existingItem = existingWishlist.find(
-        (wishlistItem) => wishlistItem._id === item._id
+      let todos = JSON.parse(
+        localStorage.getItem(LOCAL_STORAGE_SESSION) || "[]"
       );
-
-      // removing item from wishlist
-      existingWishlist.splice(existingWishlist.indexOf(existingItem!), 1);
-
-      // Save updated wishlist to localStorage
-      localStorage.setItem(
-        LOCAL_STORAGE_SESSION,
-        JSON.stringify(existingWishlist)
-      );
+      todos = todos.filter((todo: localStorageType) => todo._id !== id);
+      localStorage.setItem(LOCAL_STORAGE_SESSION, JSON.stringify(todos));
 
       dispatch({
         type: REMOVE_FROM_LOCALSTORAGE_SUCCESS,
-        payload: {
-          message: "Item removed successfully",
-          data: existingItem,
-        },
+        payload: id,
       });
-    } catch (error: any) {
-      dispatch({
-        type: REMOVE_FROM_LOCALSTORAGE_FAIL,
-        payload:
-          error?.response && error.response?.data?.message
-            ? error?.response?.data?.message
-            : error?.message,
-      });
+    } catch (error) {
+      console.error("Error removing todo:", error);
     }
   };
-
+};
 export const viewTodoById = (id: string) => async (dispatch: Dispatch) => {
   try {
+    console.log("Dispatching VIEW_TODO_REQUEST");
     dispatch({
       type: VIEW_LOCALSTORAGE_REQUEST,
     });
 
-    // get existing todos from local storage
-    const existingTodos: localStorageType[] = JSON.parse(
-      localStorage.getItem("todos") || "[]"
-    );
-    console.log("Fetched todos from local storage:", existingTodos);
+    const storedTodos = localStorage.getItem(LOCAL_STORAGE_SESSION);
+    if (storedTodos) {
+      const todos: localStorageType[] = JSON.parse(storedTodos);
+      const todo = todos.find((todo) => todo._id === id) || null;
+      console.log("Found todo:", todo);
 
-    // find the todo by id
-    const todo = existingTodos.find((todo) => todo._id === id);
-    console.log("Found todo:", todo);
-
-    if (todo) {
       dispatch({
         type: VIEW_LOCALSTORAGE_SUCCESS,
         payload: todo,
       });
     } else {
-      dispatch({
-        type: VIEW_LOCALSTORAGE_FAIL,
-        payload: "Todo not found",
-      });
+      throw new Error("No todos found in local storage");
     }
   } catch (error: any) {
-    console.error("Error fetching todo by ID:", error);
+    console.error("Error in viewTodoById:", error.message);
     dispatch({
       type: VIEW_LOCALSTORAGE_FAIL,
-      payload:
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message,
+      payload: error.message,
     });
   }
 };
 
-export const updateLocalStorage =
-  (item: localStorageType) => async (dispatch: Dispatch) => {
+export const updateTodoById =
+  (todo: localStorageType) => async (dispatch: Dispatch) => {
     try {
+      console.log("Dispatching UPDATE_LOCALSTORAGE_REQUEST");
       dispatch({ type: UPDATE_LOCALSTORAGE_REQUEST });
 
-      // Get existing wishlist from local storage
-      const existingWishlist: localStorageType[] =
-        JSON.parse(localStorage.getItem(LOCAL_STORAGE_SESSION) as any) || [];
+      const storedTodos = localStorage.getItem(LOCAL_STORAGE_SESSION);
+      if (storedTodos) {
+        let todos: localStorageType[] = JSON.parse(storedTodos);
+        todos = todos.map((t) => (t._id === todo._id ? todo : t));
+        localStorage.setItem(LOCAL_STORAGE_SESSION, JSON.stringify(todos));
+        console.log("Updated todos:", todos);
 
-      // Find index of the item to update
-      const index = existingWishlist.findIndex(
-        (wishlistItem) => wishlistItem._id === item._id
-      );
-
-      if (index !== -1) {
-        // Update the item
-        existingWishlist[index] = item;
-
-        // Save updated wishlist to localStorage
-        localStorage.setItem(
-          LOCAL_STORAGE_SESSION,
-          JSON.stringify(existingWishlist)
-        );
-
+        console.log("Dispatching UPDATE_LOCALSTORAGE_SUCCESS");
         dispatch({
           type: UPDATE_LOCALSTORAGE_SUCCESS,
-          payload: {
-            message: "Item updated successfully",
-            data: existingWishlist,
-          },
+          payload: todo,
         });
       } else {
-        dispatch({
-          type: UPDATE_LOCALSTORAGE_FAIL,
-          payload: "Item not found",
-        });
+        throw new Error("No todos found in local storage");
       }
     } catch (error: any) {
+      console.error("Error in updateTodoById:", error.message);
+      console.log("Dispatching UPDATE_LOCALSTORAGE_FAIL");
       dispatch({
         type: UPDATE_LOCALSTORAGE_FAIL,
-        payload:
-          error?.response && error.response?.data?.message
-            ? error?.response?.data?.message
-            : error?.message,
+        payload: error.message,
       });
     }
   };
 
 export const getAllLocalStorage = () => async (dispatch: Dispatch) => {
-  dispatch({ type: GET_ALL_LOCAL_STORAGE_REQUEST });
   try {
-    // Simulate API call or direct access from localStorage
-    const todos: localStorageType[] = JSON.parse(
-      localStorage.getItem("todos") || "[]"
-    );
-    dispatch({ type: GET_ALL_LOCAL_STORAGE_SUCCESS, payload: todos });
-  } catch (error: any) {
+    dispatch({ type: "GET_ALL_LOCAL_STORAGE" });
+
+    let todos = JSON.parse(
+      localStorage.getItem(LOCAL_STORAGE_SESSION) || "[]"
+    ) as localStorageType[];
+
     dispatch({
-      type: GET_ALL_LOCAL_STORAGE_FAILURE,
-      payload: error?.message || "Failed to fetch from local storage",
+      type: "GET_ALL_LOCAL_STORAGE_SUCCESS",
+      payload: todos,
+    });
+  } catch (error) {
+    dispatch({
+      type: "GET_ALL_LOCAL_STORAGE_ERROR",
+      payload: "Error fetching todos",
     });
   }
 };

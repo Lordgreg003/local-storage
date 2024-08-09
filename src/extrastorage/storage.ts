@@ -1,1 +1,1 @@
-export const LOCAL_STORAGE_SESSION = "localStorageSession";
+export const LOCAL_STORAGE_SESSION = "todos";

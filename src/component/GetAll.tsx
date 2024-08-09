@@ -1,24 +1,44 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { localStorageType } from "../redux/types/types";
+import { localStorageType, ReduxResponseType } from "../redux/types/types";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getAllLocalStorage,
+  removeFromLocalStorage,
+} from "../redux/actions/Actions";
+import { RootState } from "../redux/store";
+import { ThunkDispatch } from "redux-thunk";
 
 const GetAllLocalStorage: React.FC = () => {
-  const [todos, setTodos] = useState<localStorageType[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch: ThunkDispatch<RootState, void, any> = useDispatch();
+
+  // Fetching todos
+  const productsRedux = useSelector(
+    (state: RootState) => state.getAllLocalStorage
+  ) as ReduxResponseType<localStorageType[]>;
+
+  // Fetching delete status
+  const deleteStatus = useSelector(
+    (state: RootState) => state.removeFromLocalStorage
+  ) as ReduxResponseType<localStorageType[]>;
 
   useEffect(() => {
-    try {
-      const todosFromStorage = JSON.parse(
-        localStorage.getItem("todos") || "[]"
-      );
-      setTodos(todosFromStorage);
-    } catch (error) {
-      setError("Failed to load todos.");
-    } finally {
-      setLoading(false);
+    // Fetch todos when the component mounts
+    dispatch(getAllLocalStorage());
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Refresh todos if delete operation was successful
+    if (deleteStatus.serverResponse?.success) {
+      dispatch(getAllLocalStorage());
     }
-  }, []);
+  }, [deleteStatus, dispatch]);
+
+  const handleDelete = (id: string) => {
+    console.log("Deleting todo with ID:", id);
+    dispatch(removeFromLocalStorage(id));
+    dispatch(getAllLocalStorage());
+  };
 
   return (
     <div className="container mx-auto p-4">
@@ -31,10 +51,10 @@ const GetAllLocalStorage: React.FC = () => {
           Create Todo
         </Link>
       </div>
-      {loading ? (
+      {productsRedux.loading ? (
         <p>Loading...</p>
-      ) : error ? (
-        <p className="text-red-500">{error}</p>
+      ) : productsRedux.error ? (
+        <p className="text-red-500">{productsRedux.error}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white border border-gray-200 rounded-lg">
@@ -48,37 +68,40 @@ const GetAllLocalStorage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {todos.length > 0 ? (
-                todos.map((todo) => (
-                  <tr key={todo._id} className="border-b">
-                    <td className="py-2 px-4">{todo._id}</td>
-                    <td className="py-2 px-4">{todo.username}</td>
-                    <td className="py-2 px-4">{todo.title}</td>
-                    <td className="py-2 px-4">{todo.text}</td>
-                    <td className="py-2 px-4 flex space-x-2">
-                      <Link
-                        to={`/view/${todo._id}`}
-                        className="text-blue-500 hover:underline"
-                      >
-                        View
-                      </Link>
-                      <Link
-                        to={`/update/${todo._id}`}
-                        className="text-yellow-500 hover:underline"
-                      >
-                        Update
-                      </Link>
-                      <button
-                        onClick={() => {
-                          // Call delete action here
-                        }}
-                        className="text-red-500 hover:underline"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
+              {productsRedux.serverResponse?.data?.length > 0 ? (
+                productsRedux.serverResponse.data.map(
+                  (todo: localStorageType) => {
+                    console.log("Rendering todo with _id:", todo._id); // Debugging line
+                    return (
+                      <tr key={todo._id} className="border-b">
+                        <td className="py-2 px-4">{todo._id}</td>
+                        <td className="py-2 px-4">{todo.username}</td>
+                        <td className="py-2 px-4">{todo.title}</td>
+                        <td className="py-2 px-4">{todo.text}</td>
+                        <td className="py-2 px-4 flex space-x-2">
+                          <Link
+                            to={`/view/${todo._id}`}
+                            className="text-blue-500 hover:underline"
+                          >
+                            View
+                          </Link>
+                          <Link
+                            to={`/update/${todo._id}`}
+                            className="text-yellow-500 hover:underline"
+                          >
+                            Update
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(todo._id)}
+                            className="text-red-500 hover:underline"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
+                )
               ) : (
                 <tr>
                   <td colSpan={5} className="py-2 px-4 text-center">

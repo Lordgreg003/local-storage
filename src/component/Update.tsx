@@ -1,49 +1,51 @@
-import React, { useState } from "react";
-import { useDispatch } from "react-redux";
-import { addToLocalStorage } from "../redux/actions/Actions";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { updateTodoById, viewTodoById } from "../redux/actions/Actions";
+import { RootState } from "../redux/store"; // Adjust import according to your setup
 import { localStorageType } from "../redux/types/types";
+import { useNavigate, useParams } from "react-router-dom";
 import { ThunkDispatch } from "redux-thunk";
-import { RootState } from "../redux/store";
-import { useNavigate } from "react-router-dom";
 
-const CreateTodo: React.FC = () => {
+const UpdateTodo: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false); // Track loading state
+  const dispatch: ThunkDispatch<RootState, void, any> = useDispatch();
+  const { todo, loading, success, error } = useSelector(
+    (state: RootState) => state.viewTodoById // Adjust selector based on your store setup
+  );
 
-  const [todo, setTodo] = useState<localStorageType>({
+  const [formTodo, setFormTodo] = useState<localStorageType>({
     _id: "",
     username: "",
     title: "",
     text: "",
   });
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const dispatch: ThunkDispatch<RootState, void, any> = useDispatch();
+  useEffect(() => {
+    if (id) {
+      dispatch(viewTodoById(id));
+    }
+  }, [id, dispatch]);
+
+  useEffect(() => {
+    if (todo) {
+      setFormTodo(todo);
+    }
+  }, [todo]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setTodo((prevTodo) => ({
+    setFormTodo((prevTodo) => ({
       ...prevTodo,
       [name]: value,
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      await dispatch(addToLocalStorage(todo));
-      setSuccessMessage("Todo added successfully!");
-      setTimeout(() => navigate("/"), 3000);
-      console.log("Todo added:", todo); // Log the added todo
-      setTodo({
-        _id: "",
-        username: "",
-        title: "",
-        text: "",
-      }); // Clear the form fields
-    } catch (error) {
-      console.error("Error adding todo:", error);
+    dispatch(updateTodoById(formTodo));
+    if (success) {
+      navigate("/"); // Navigate to another page on successful update
     }
   };
 
@@ -54,7 +56,7 @@ const CreateTodo: React.FC = () => {
         className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md mx-auto"
       >
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-700">
-          Create Todo
+          Update Todo
         </h2>
         <div className="mb-4">
           <label
@@ -68,9 +70,10 @@ const CreateTodo: React.FC = () => {
             name="_id"
             id="_id"
             placeholder="ID"
-            value={todo._id}
+            value={formTodo._id}
             onChange={handleChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            readOnly
           />
         </div>
         <div className="mb-4">
@@ -85,7 +88,7 @@ const CreateTodo: React.FC = () => {
             name="username"
             id="username"
             placeholder="Username"
-            value={todo.username}
+            value={formTodo.username}
             onChange={handleChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
@@ -102,7 +105,7 @@ const CreateTodo: React.FC = () => {
             name="title"
             id="title"
             placeholder="Title"
-            value={todo.title}
+            value={formTodo.title}
             onChange={handleChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
@@ -119,26 +122,22 @@ const CreateTodo: React.FC = () => {
             name="text"
             id="text"
             placeholder="Text"
-            value={todo.text}
+            value={formTodo.text}
             onChange={handleChange}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
         </div>
-        {successMessage && (
-          <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md">
-            {successMessage}
-          </div>
-        )}
+        {loading && <div className="mb-4 text-blue-600">Loading...</div>}
+        {error && <div className="mb-4 text-red-600">{error}</div>}
         <button
           type="submit"
-          disabled={loading}
           className="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
-          {loading ? "Adding..." : "Add Todo"}
+          Update Todo
         </button>
       </form>
     </div>
   );
 };
 
-export default CreateTodo;
+export default UpdateTodo;

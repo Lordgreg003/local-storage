@@ -14,6 +14,7 @@ export type localStorageType = {
   username: string;
   title: string;
   text: string;
+  // data : [];
 
   image?: ImageType[];
 };
@@ -28,6 +29,8 @@ export type ReduxResponseType<T = any> = {
   success: boolean;
   todo: localStorageType | null;
   serverResponse: {
+    // length: number;
+    // map(arg0: (todo: localStorageType) => import("react/jsx-runtime").JSX.Element): import("react").ReactNode;
     data: T;
     message: string;
     success: boolean;

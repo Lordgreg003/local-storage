@@ -5,7 +5,7 @@ import {
   addToLocalStorageReducer,
   removeFromLocalStorageReducer,
   viewTodoByIdReducer,
-  updateLocalStorageReducer,
+  updateTodoByIdReducer,
   getAllLocalStorageReducer,
 } from "./reducers/localReducer";
 // import {viewTodoByIdReducer} from "./reducers/localReducer";
@@ -13,7 +13,7 @@ import { ReduxResponseType } from "./types/types";
 
 export interface RootState {
   addToLocalStorage: any; // Define the actual type based on your application
-  updateLocalStorage: any;
+  updateTodoById: any;
   removeFromLocalStorage: any;
   viewTodoById: any;
   getAllLocalStorage: any;
@@ -24,7 +24,7 @@ export type ReducersType = {
   addToLocalStorage: ReduxResponseType;
   removeFromLocalStorage: ReduxResponseType;
   viewTodoById: ReduxResponseType;
-  updateLocalStorage: ReduxResponseType;
+  updateTodoById: ReduxResponseType;
   getAllLocalStorage: ReduxResponseType;
 };
 
@@ -33,7 +33,7 @@ const reducer = combineReducers<ReducersType>({
   addToLocalStorage: addToLocalStorageReducer,
   removeFromLocalStorage: removeFromLocalStorageReducer,
   viewTodoById: viewTodoByIdReducer,
-  updateLocalStorage: updateLocalStorageReducer,
+  updateTodoById: updateTodoByIdReducer,
   getAllLocalStorage: getAllLocalStorageReducer,
 });
 
